@@ -69,5 +69,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          files: |
-            src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+          files: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
