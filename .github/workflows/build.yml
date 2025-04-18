@@ -1,4 +1,4 @@
-name: Build macOS Universal App
+name: Build and Release macOS App
 
 on:
   push:
@@ -8,8 +8,9 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Node
@@ -23,7 +24,7 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Add Rust targets for universal build
+      - name: Add Rust targets for universal binary
         run: |
           rustup target add x86_64-apple-darwin
           rustup target add aarch64-apple-darwin
@@ -33,7 +34,7 @@ jobs:
           npm install
           npm install -g @tauri-apps/cli
 
-      # --- Notarisation prep (commented out for now) ---
+      # Commented out until signing is enabled
       # - name: Decode signing certificate
       #   run: |
       #     echo "$SIGNING_CERTIFICATE" | base64 --decode > certificate.p12
@@ -56,7 +57,8 @@ jobs:
           cd src-tauri/target/universal-apple-darwin/release/bundle/macos
           ditto -c -k --keepParent Support.app Support.zip
 
-      # - name: Notarise with Apple
+      # Commented out until Apple notarisation is configured
+      # - name: Notarise app with Apple
       #   uses: devbotsxyz/xcode-notarize@v1
       #   with:
       #     product-path: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
@@ -65,7 +67,8 @@ jobs:
       #     appstore-connect-password: ${{ secrets.APPLE_APP_PASSWORD }}
       #     team-id: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Upload to GitHub Releases
+      - name: Upload to GitHub Releases (tag: latest)
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: latest
           files: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
