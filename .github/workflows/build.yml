@@ -1,0 +1,71 @@
+name: Build macOS Universal App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Add Rust targets for universal build
+        run: |
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install -g @tauri-apps/cli
+
+      # --- Notarisation prep (commented out for now) ---
+      # - name: Decode signing certificate
+      #   run: |
+      #     echo "$SIGNING_CERTIFICATE" | base64 --decode > certificate.p12
+      #   env:
+      #     SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
+
+      # - name: Import certificate into keychain
+      #   run: |
+      #     security create-keychain -p "" build.keychain
+      #     security default-keychain -s build.keychain
+      #     security unlock-keychain -p "" build.keychain
+      #     security import certificate.p12 -k build.keychain -P "${{ secrets.SIGNING_CERT_PASSWORD }}" -T /usr/bin/codesign
+      #     security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+
+      - name: Build Tauri app (universal)
+        run: npm run tauri build -- --target universal-apple-darwin
+
+      - name: Zip the .app
+        run: |
+          cd src-tauri/target/universal-apple-darwin/release/bundle/macos
+          ditto -c -k --keepParent Support.app Support.zip
+
+      # - name: Notarise with Apple
+      #   uses: devbotsxyz/xcode-notarize@v1
+      #   with:
+      #     product-path: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+      #     primary-bundle-id: co.customconfig.support
+      #     appstore-connect-username: ${{ secrets.APPLE_ID }}
+      #     appstore-connect-password: ${{ secrets.APPLE_APP_PASSWORD }}
+      #     team-id: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          files: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
