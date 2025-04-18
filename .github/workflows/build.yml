@@ -34,7 +34,6 @@ jobs:
           npm install
           npm install -g @tauri-apps/cli
 
-      # Commented out until signing is enabled
       # - name: Decode signing certificate
       #   run: |
       #     echo "$SIGNING_CERTIFICATE" | base64 --decode > certificate.p12
@@ -57,7 +56,6 @@ jobs:
           cd src-tauri/target/universal-apple-darwin/release/bundle/macos
           ditto -c -k --keepParent Support.app Support.zip
 
-      # Commented out until Apple notarisation is configured
       # - name: Notarise app with Apple
       #   uses: devbotsxyz/xcode-notarize@v1
       #   with:
@@ -71,4 +69,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          files: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+          files: |
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
