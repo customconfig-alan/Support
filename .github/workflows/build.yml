@@ -65,8 +65,12 @@ jobs:
       #     appstore-connect-password: ${{ secrets.APPLE_APP_PASSWORD }}
       #     team-id: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Upload to GitHub Releases (tag: latest)
+      - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
-          files: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+          name: Latest
+          files: |
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
