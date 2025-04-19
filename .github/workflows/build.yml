@@ -77,6 +77,6 @@ jobs:
         with:
           tag: latest
           name: Latest
-          artifacts: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+          artifacts: "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip"
           allowUpdates: true
           token: ${{ secrets.GITHUB_TOKEN }}
