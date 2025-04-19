@@ -77,7 +77,7 @@ jobs:
         with:
           tag_name: latest
           name: Latest
-          files: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+          files: "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip"
           draft: false
           prerelease: false
         env:
