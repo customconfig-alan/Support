@@ -65,7 +65,7 @@ jobs:
       #     appstore-connect-password: ${{ secrets.APPLE_APP_PASSWORD }}
       #     team-id: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Create or update 'latest' Git tag
+      - name: Create or update 'latest' tag
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
@@ -73,10 +73,12 @@ jobs:
           git push origin latest --force
 
       - name: Upload to GitHub Release (tag: latest)
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v1
         with:
-          tag: latest
+          tag_name: latest
           name: Latest
-          artifacts: "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip"
-          allowUpdates: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          files: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
