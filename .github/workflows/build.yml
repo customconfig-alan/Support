@@ -34,20 +34,6 @@ jobs:
           npm install
           npm install -g @tauri-apps/cli
 
-      # - name: Decode signing certificate
-      #   run: |
-      #     echo "$SIGNING_CERTIFICATE" | base64 --decode > certificate.p12
-      #   env:
-      #     SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
-
-      # - name: Import certificate into keychain
-      #   run: |
-      #     security create-keychain -p "" build.keychain
-      #     security default-keychain -s build.keychain
-      #     security unlock-keychain -p "" build.keychain
-      #     security import certificate.p12 -k build.keychain -P "${{ secrets.SIGNING_CERT_PASSWORD }}" -T /usr/bin/codesign
-      #     security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
-
       - name: Build Tauri app (universal)
         run: npm run tauri build -- --target universal-apple-darwin
 
@@ -55,29 +41,32 @@ jobs:
         run: |
           cd src-tauri/target/universal-apple-darwin/release/bundle/macos
           ditto -c -k --keepParent Support.app Support.zip
+          ls -lh
 
-      # - name: Notarise app with Apple
-      #   uses: devbotsxyz/xcode-notarize@v1
-      #   with:
-      #     product-path: src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
-      #     primary-bundle-id: co.customconfig.support
-      #     appstore-connect-username: ${{ secrets.APPLE_ID }}
-      #     appstore-connect-password: ${{ secrets.APPLE_APP_PASSWORD }}
-      #     team-id: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Check that zip exists
+        run: |
+          if [ ! -f src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip ]; then
+            echo "❌ Support.zip not found."
+            exit 1
+          else
+            echo "✅ Support.zip found, proceeding to tag and release."
+          fi
 
       - name: Create or update 'latest' tag
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          git fetch origin
           git tag -f latest
           git push origin latest --force
 
-      - name: Upload to GitHub Release (tag: latest)
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
           name: Latest
-          files: "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip"
+          files: |
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip
           draft: false
           prerelease: false
         env:
