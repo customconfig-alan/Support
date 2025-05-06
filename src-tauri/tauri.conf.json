@@ -3,6 +3,9 @@
   "productName": "Support",
   "version": "1.4.0",
   "identifier": "co.customconfig.support",
+  "plugins": {
+    "store": {}
+  },
   "build": {
     "frontendDist": "../src"
   },
