@@ -81,13 +81,88 @@
     <div id="embed" style="width:100vw; height:100vh;"></div>
   </div>
 
-  <script>
+  <script type="module">
+    // Removed static import of fs APIs to allow dynamic access via window.__TAURI__
+
     window.addEventListener("DOMContentLoaded", () => {
+      // Dynamically access Tauri plugin-store API for non-bundled setup
+      console.log("DOM fully loaded and parsed");
+
+      (async () => {
+        try {
+          const store = {
+            async save(user) {
+              await window.__TAURI__.core.invoke("save_user_data", { user: JSON.stringify(user) });
+            },
+            async load() {
+              const json = await window.__TAURI__.core.invoke("load_user_data");
+              return JSON.parse(json);
+            }
+          };
+          const storedUser = await store.load();
+
+          if (storedUser && storedUser.name && storedUser.email && storedUser.emailHash) {
+            console.log("Stored user found:", storedUser);
+
+            document.getElementById("form").style.display = "none";
+            document.getElementById("chat-container").style.display = "block";
+
+            const script = document.createElement("script");
+            script.src = "https://chat.cdn-plain.com/index.js";
+            script.async = false;
+            script.onload = function () {
+              Plain.init({
+                appId: "liveChatApp_01JS2CBHHZ6ZS9XWX95GVVVPFQ",
+                hideBranding: true,
+                theme: "dark",
+                style: {
+                  brandColor: "#FF4D3F",
+                  brandBackgroundColor: "#1F1F1F",
+                  launcherBackgroundColor: "#101011",
+                  launcherIconColor: "#FBFBFB"
+                },
+                embedAt: document.getElementById("embed"),
+                customerDetails: {
+                  email: storedUser.email,
+                  emailHash: storedUser.emailHash,
+                  fullName: storedUser.name,
+                  shortName: storedUser.name.split(" ")[0]
+                },
+                chatButtons: [
+                  { icon: "chat", text: "Start a Conversation" },
+                  {
+                    icon: "book",
+                    text: "Schedule a Session",
+                    threadDetails: { labelTypeIds: ["lt_01JS4662NJVV433M37ESVXMXJ4"] }
+                  },
+                  {
+                    icon: "support",
+                    text: "Report an Urgent Issue",
+                    threadDetails: { labelTypeIds: ["lt_01JS46M4JNJ4VB5BNFTSMV9H70"] }
+                  }
+                ]
+              });
+
+              Plain.open();
+            };
+
+            document.head.appendChild(script);
+          } else {
+            console.log("No valid stored user found. Showing login form.");
+          }
+        } catch (error) {
+          console.error("Error checking stored user:", error);
+        }
+      })();
+
       const connectButton = document.getElementById("connect");
 
       connectButton.addEventListener("click", async () => {
+        console.log("Connect button clicked");
         const name = document.getElementById("name").value.trim();
+        console.log("Name entered:", name);
         const email = document.getElementById("email").value.trim();
+        console.log("Email entered:", email);
         const status = document.getElementById("status");
 
         if (!name || !email) {
@@ -99,6 +174,7 @@
 
         try {
           const serial = await window.__TAURI__.core.invoke("get_serial_number");
+          console.log("Serial number retrieved:", serial);
           const shortName = name.split(" ")[0];
 
           const response = await fetch("https://workflows.customconfig.co/webhook/support/auth", {
@@ -107,13 +183,30 @@
             body: JSON.stringify({ email, serial })
           });
 
+          console.log("Auth response status:", response.status);
+          console.log("Auth response body:", await response.clone().text());
+
           if (!response.ok) throw new Error("Authentication failed");
 
           const { emailHash } = await response.json();
+          console.log("Parsed emailHash:", emailHash);
+
+          const store = {
+            async save(user) {
+              await window.__TAURI__.core.invoke("save_user_data", { user: JSON.stringify(user) });
+            },
+            async load() {
+              const json = await window.__TAURI__.core.invoke("load_user_data");
+              return JSON.parse(json);
+            }
+          };
+          await store.save({ name, email, emailHash });
+          console.log("Login data saved to plugin-store");
 
           document.getElementById("form").style.display = "none";
           document.getElementById("chat-container").style.display = "block";
 
+          console.log("Injecting Plain widget script");
           const script = document.createElement("script");
           script.src = "https://chat.cdn-plain.com/index.js";
           script.async = false;
