@@ -33,8 +33,52 @@ jobs:
           rustup target add x86_64-apple-darwin
           rustup target add aarch64-apple-darwin
 
+
       - name: Build universal Tauri app
         run: npm run tauri build -- --target universal-apple-darwin
+
+      - name: Set up keychain for code signing
+        run: |
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Import Apple Distribution certificate
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Sign the app
+        run: |
+          codesign --deep --force --verbose --options runtime \
+            --sign "Apple Distribution: CustomConfig Ltd (K4DC35T488)" \
+            "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"
+
+      - name: Notarise the app
+        run: |
+          xcrun notarytool submit \
+            "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app" \
+            --apple-id "$APPLE_ID" \
+            --team-id "K4DC35T488" \
+            --password "$APPLE_PASSWORD" \
+            --wait
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+
+      - name: Staple notarisation ticket
+        run: |
+          xcrun stapler staple \
+            "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"
 
       - name: Zip the app bundle
         run: |
