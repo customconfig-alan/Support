@@ -80,13 +80,19 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
 
-      - name: Wait before stapling
-        run: sleep 60
-
-      - name: Staple notarisation ticket
+      - name: Try stapling up to 3 times
         run: |
-          xcrun stapler staple \
-            "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"
+          for i in 1 2 3; do
+            if xcrun stapler staple "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"; then
+              echo "Stapling succeeded"
+              exit 0
+            else
+              echo "Stapling attempt $i failed. Retrying in 60s..."
+              sleep 60
+            fi
+          done
+          echo "Stapling failed after 3 attempts"
+          exit 1
 
       - name: Upload artifact (universal)
         uses: actions/upload-artifact@v4.6.2
