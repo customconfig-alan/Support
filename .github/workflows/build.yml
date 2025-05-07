@@ -80,6 +80,9 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
 
+      - name: Wait before stapling
+        run: sleep 60
+
       - name: Staple notarisation ticket
         run: |
           xcrun stapler staple \
