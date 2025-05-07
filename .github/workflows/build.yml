@@ -62,10 +62,10 @@ jobs:
             --sign "Apple Distribution: CustomConfig Ltd (K4DC35T488)" \
             "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"
 
-      - name: Notarise the app
+      - name: Notarise the zipped app
         run: |
           xcrun notarytool submit \
-            "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app" \
+            "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip" \
             --apple-id "$APPLE_ID" \
             --team-id "K4DC35T488" \
             --password "$APPLE_PASSWORD" \
