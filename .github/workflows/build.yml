@@ -46,20 +46,20 @@ jobs:
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-      - name: Import Apple Distribution certificate
+      - name: Import Developer ID Application certificate
         run: |
-          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          echo "$DEV_ID_CERTIFICATE" | base64 --decode > certificate.p12
           security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
         env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          DEV_ID_CERTIFICATE: ${{ secrets.DEV_ID_CERTIFICATE }}
           CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 
       - name: Sign the app
         run: |
           codesign --deep --force --verbose --options runtime \
-            --sign "Apple Distribution: CustomConfig Ltd (K4DC35T488)" \
+            --sign "Developer ID Application: CustomConfig Ltd (K4DC35T488)" \
             "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"
 
       - name: Zip the app bundle
