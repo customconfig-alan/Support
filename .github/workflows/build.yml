@@ -56,25 +56,36 @@ jobs:
           CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 
+      - name: Make keychain globally available
+        run: |
+          security list-keychains -s build.keychain
+
       - name: Sign the app
         run: |
           codesign --deep --force --verbose --options runtime \
             --sign "Developer ID Application: CustomConfig Ltd (K4DC35T488)" \
             "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"
 
+      - name: Verify codesign before notarisation
+        run: |
+          codesign --verify --deep --strict --verbose=4 "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.app"
+
       - name: Zip the app bundle
         run: |
           cd src-tauri/target/universal-apple-darwin/release/bundle/macos
           ditto -c -k --keepParent Support.app Support.zip
 
-      - name: Notarise the zipped app
+      - name: Notarise the zipped app (with verbose output)
         run: |
+          echo "Submitting to Apple Notary Service..."
           xcrun notarytool submit \
             "src-tauri/target/universal-apple-darwin/release/bundle/macos/Support.zip" \
             --apple-id "$APPLE_ID" \
-            --team-id "K4DC35T488" \
+            --team-id "$APPLE_TEAM_ID" \
             --password "$APPLE_PASSWORD" \
-            --wait
+            --wait \
+            --output-format json \
+            --verbose
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
